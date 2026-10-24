@@ -7,7 +7,7 @@ services:
     autoDeployTrigger: checksPass
     envVars:
       - key: NODE_VERSION
-        value: 22.16.0
+        value: 24.11.0
       - key: SKIP_INSTALL_DEPS
         value: "true"
     headers:
