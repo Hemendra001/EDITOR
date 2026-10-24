@@ -1,0 +1,17 @@
+import assert from 'node:assert/strict';
+import fs from 'node:fs/promises';
+import {DOMMatrix,Path2D,ImageData,createCanvas} from '@napi-rs/canvas';
+Object.assign(globalThis,{DOMMatrix,Path2D,ImageData});Uint8Array.prototype.toHex??=function(){return Buffer.from(this).toString('hex')};Math.sumPrecise??=xs=>Array.from(xs).reduce((a,b)=>a+b,0);
+const {translationChunks,translatedPdf}=await import('../src/translation.js');
+const {sampleColors,paintReplacement}=await import('../src/text-editing.js');
+assert.deepEqual(translationChunks('Hello. How are you?'),['Hello.','How are you?']);assert.deepEqual(translationChunks('नमस्ते। आप कैसे हैं?'),['नमस्ते।','आप कैसे हैं?']);
+assert.ok(translationChunks('x'.repeat(800)).every(x=>x.length<=300));
+globalThis.fetch=async url=>new Response(await fs.readFile('dist'+url));
+const hindi=await translatedPdf('नमस्ते। आप कैसे हैं?\n\nभारत एक सुंदर देश है।','Hindi translation');await fs.writeFile('/private/tmp/ihatepdf-hindi.pdf',hindi);
+const E=await import('../src/engine.js'),pdfjs=await import('pdfjs-dist/build/pdf.mjs');pdfjs.GlobalWorkerOptions.workerSrc=new URL('../node_modules/pdfjs-dist/build/pdf.worker.mjs',import.meta.url).href;
+assert.ok((await E.pdfText(new File([hindi],'hindi.pdf'))).join('').includes('भारत'));
+const canvas=createCanvas(300,100),ctx=canvas.getContext('2d');ctx.fillStyle='white';ctx.fillRect(0,0,300,100);ctx.fillStyle='black';ctx.font='20px sans-serif';ctx.fillText('DELETE',10,40);
+assert.equal(sampleColors(canvas,{x:10,y:20,width:100,height:24}).background,'#ffffff');
+paintReplacement(ctx,{pageWidth:300,pageHeight:100,x:10,baseline:40,width:100,originalSize:20,size:20,ascent:1,descent:.2,background:'#ffffff',color:'#000000',text:'',font:'sans-serif'},300,100);
+assert.ok([...ctx.getImageData(10,20,100,24).data].every(v=>v===255),'deleted glyph pixels must be removed');
+console.log('New tool regressions passed: sentence chunking, Hindi shaping/extraction, detected background, permanent character removal.');

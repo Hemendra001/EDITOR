@@ -1,0 +1,17 @@
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import {execFileSync} from 'node:child_process';
+execFileSync(process.execPath,['scripts/production.mjs'],{env:{...process.env,SITE_URL:'https://example.com'}});
+const index=fs.readFileSync('dist/index.html','utf8');
+assert(index.includes('rel="canonical" href="https://example.com/"'));
+assert(index.includes('/tools/pdf-word/'));
+assert(!index.includes('adsbygoogle'));
+assert(fs.readFileSync('dist/sitemap.xml','utf8').includes('https://example.com/tools/pdf-word/'));
+const config=fs.readFileSync('render.yaml','utf8');
+for(const rule of ['nosniff','frame-ancestors','object-src','must-revalidate'])assert(config.includes(rule));
+assert(!config.includes('path: /assets/*\n        name: Cache-Control\n        value: public, max-age=31536000'));
+assert(fs.readFileSync('src/engine.js','utf8').includes('isEvalSupported:false'));
+assert(!/^import .*from '.\/workflow.js'/m.test(fs.readFileSync('src/app.js','utf8')));
+execFileSync(process.execPath,['scripts/production.mjs'],{env:{...process.env,SITE_URL:'',RENDER_EXTERNAL_URL:''}});
+assert(!fs.existsSync('dist/sitemap.xml'));
+console.log('Production metadata, crawlable pages, lazy loading, CSP and caching checks passed.');
