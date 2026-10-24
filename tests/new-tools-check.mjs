@@ -1,3 +1,5 @@
+import {tmpdir} from 'node:os';
+import {join} from 'node:path';
 import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
 import {DOMMatrix,Path2D,ImageData,createCanvas} from '@napi-rs/canvas';
@@ -7,7 +9,7 @@ const {sampleColors,paintReplacement}=await import('../src/text-editing.js');
 assert.deepEqual(translationChunks('Hello. How are you?'),['Hello.','How are you?']);assert.deepEqual(translationChunks('नमस्ते। आप कैसे हैं?'),['नमस्ते।','आप कैसे हैं?']);
 assert.ok(translationChunks('x'.repeat(800)).every(x=>x.length<=300));
 globalThis.fetch=async url=>new Response(await fs.readFile('dist'+url));
-const hindi=await translatedPdf('नमस्ते। आप कैसे हैं?\n\nभारत एक सुंदर देश है।','Hindi translation');await fs.writeFile('/private/tmp/ihatepdf-hindi.pdf',hindi);
+const hindi=await translatedPdf('नमस्ते। आप कैसे हैं?\n\nभारत एक सुंदर देश है।','Hindi translation');await fs.writeFile(join(tmpdir(),'ihatepdf-hindi.pdf'),hindi);
 const E=await import('../src/engine.js'),pdfjs=await import('pdfjs-dist/build/pdf.mjs');pdfjs.GlobalWorkerOptions.workerSrc=new URL('../node_modules/pdfjs-dist/build/pdf.worker.mjs',import.meta.url).href;
 assert.ok((await E.pdfText(new File([hindi],'hindi.pdf'))).join('').includes('भारत'));
 const canvas=createCanvas(300,100),ctx=canvas.getContext('2d');ctx.fillStyle='white';ctx.fillRect(0,0,300,100);ctx.fillStyle='black';ctx.font='20px sans-serif';ctx.fillText('DELETE',10,40);
